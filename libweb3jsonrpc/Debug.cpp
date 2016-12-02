@@ -120,19 +120,35 @@ Json::Value Debug::debug_traceBlockByNumber(int _blockNumber, Json::Value const&
 	return ret;
 }
 
-Json::Value Debug::debug_storageAt(string const& _blockHashOrNumber, int _txIndex, string const& _address)
+Json::Value Debug::debug_storageAt(string const& _blockHashOrNumber, int _txIndex, string const& _address, string const& _begin, string const& _end, int _maxResults)
 {
 	Json::Value ret(Json::objectValue);
+	ret["complete"] = true;
 
 	if (_txIndex < 0)
 		throw jsonrpc::JsonRpcException("Negative index");
+	if (_maxResults <= 0)
+		throw jsonrpc::JsonRpcException("Nonpositive maxResults");
 	Block block = m_eth.block(blockHash(_blockHashOrNumber));
 
 	unsigned i = ((unsigned)_txIndex < block.pending().size()) ? (unsigned)_txIndex : block.pending().size();
 	State state = block.fromPending(i);
 
-	for (auto const& i: state.storage(Address(_address)))
-		ret[toHex(toCompactBigEndian(i.first, 1), 2, HexPrefix::Add)] = toHex(toCompactBigEndian(i.second, 1), 2, HexPrefix::Add);
+	map<u256, u256> const stateOrdered(state.storage(Address(_address)));
+
+	auto itBegin = stateOrdered.lower_bound(u256(_begin));
+	auto itEnd = stateOrdered.upper_bound(u256(_end));
+
+	for (auto it = itBegin; it != itEnd; ++it) {
+		if (ret["storage"].size() == _maxResults) {
+			ret["complete"] = false;
+			break;
+		}
+
+		ret["storage"][toHex(toCompactBigEndian(it->first, 1), 2, HexPrefix::Add)] = toHex(toCompactBigEndian(it->second, 1), 2, HexPrefix::Add);
+	}
+
+
 	return ret;
 }
 

@@ -154,7 +154,7 @@ public:
 	/// Get the storage of an account.
 	/// @note This is expensive. Don't use it unless you need to.
 	/// @returns std::unordered_map<u256, u256> if no account exists at that address.
-	std::unordered_map<u256, u256> storage(Address const& _contract) const { return m_state.storage(_contract); }
+	std::map<u256, u256> storage(Address const& _contract) const { return m_state.storage(_contract); }
 
 	/// Get the code of an account.
 	/// @returns bytes() if no account exists at that address.
